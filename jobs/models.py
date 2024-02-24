@@ -1,4 +1,5 @@
 from django.db import models
+from user.models import User
 from jobs.utils import SALARY_CHOICES, EXPERIENCE_CHOICES, JOB_TYPE_CHOICES
 
 # Create your models here.
@@ -19,5 +20,10 @@ class Job(models.Model):
     def __str__(self):
         return self.job_title
     
+class ApplyJob(models.Model):
+    job = models.ForeignKey(Job, on_delete=models.CASCADE)
+    user = models.ForeignKey(User , on_delete=models.CASCADE)
+    resume = models.FileField(upload_to='static/resumes')
 
-
+    def __str__(self):
+        return self.job.job_title
