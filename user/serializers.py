@@ -59,3 +59,9 @@ class VerifyEmailTokenSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         return attrs
+    
+class RefreshAccessTokenSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField(max_length=2000)
+
+    def validate(self, attrs):
+        return super().validate(attrs)

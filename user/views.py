@@ -1,10 +1,13 @@
+import jwt
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from user.models import User
-from user.serializers import UserRegisterSerializer, UserLoginSerializer, VerifyEmailTokenSerializer
+from user.serializers import RefreshAccessTokenSerializer, UserRegisterSerializer, UserLoginSerializer, VerifyEmailTokenSerializer
 from user.utils import get_tokens_for_user
 from user.email import send_email
+from rest_framework_simplejwt.tokens import RefreshToken
+from jwt.exceptions import InvalidSignatureError
 
 # Create your views here.
 
@@ -42,3 +45,18 @@ class UserLoginView(APIView):
             else:
                 return Response({"code":status.HTTP_400_BAD_REQUEST,"status":False,"message":'Invalid credentials.'})
         return Response({"errors":serializer.errors,"code":status.HTTP_400_BAD_REQUEST,"status":False})
+    
+class RefreshAccessToken(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer =RefreshAccessTokenSerializer(data= request.data)
+        if serializer.is_valid(raise_exception=True):
+            refresh_token = serializer.validated_data['refresh_token']
+            try:
+                refresh_token_obj = RefreshToken(refresh_token)
+                user = User.objects.get(id=refresh_token_obj['email'])
+                token = get_tokens_for_user(user)
+                return Response({"token":token,"code":status.HTTP_200_OK,"status":True ,"message":'New access and refresh token has been generated.'})
+            except InvalidSignatureError:
+                return Response({'error': 'Signature verification failed'}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                return Response({"errors":serializer.errors,"code":status.HTTP_400_BAD_REQUEST,"status":False})
