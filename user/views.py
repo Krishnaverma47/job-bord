@@ -53,10 +53,8 @@ class RefreshAccessToken(APIView):
             refresh_token = serializer.validated_data['refresh_token']
             try:
                 refresh_token_obj = RefreshToken(refresh_token)
-                user = User.objects.get(id=refresh_token_obj['email'])
+                user = User.objects.get(id=refresh_token_obj['user_id'])
                 token = get_tokens_for_user(user)
                 return Response({"token":token,"code":status.HTTP_200_OK,"status":True ,"message":'New access and refresh token has been generated.'})
-            except InvalidSignatureError:
-                return Response({'error': 'Signature verification failed'}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
-                return Response({"errors":serializer.errors,"code":status.HTTP_400_BAD_REQUEST,"status":False})
+                return Response({"errors":e,"code":status.HTTP_400_BAD_REQUEST,"status":False})
