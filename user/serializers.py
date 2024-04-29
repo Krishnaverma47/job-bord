@@ -65,3 +65,29 @@ class RefreshAccessTokenSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         return super().validate(attrs)
+    
+class SendEmailVerificationAgainSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate(self, attrs):
+        return super().validate(attrs)
+    
+
+class ResetPasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(max_length=50)
+    new_password = serializers.CharField(max_length=50)
+
+    def validate_new_password(self, value):
+        password = value
+        pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+        if not re.match(pattern, password):
+            raise serializers.ValidationError('Password must be at least 8 characters long and contain at least one number, one uppercase, and one lowercase letter.')
+        return value
+    
+    def validate(self, attrs):
+        old_password = attrs['old_password']
+        new_password = attrs['new_password']
+        if old_password == new_password:
+            raise serializers.ValidationError('Old password and new password must be different.')
+        return super().validate(attrs)
+

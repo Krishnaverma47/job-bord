@@ -6,10 +6,11 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from user.models import User
-from user.serializers import RefreshAccessTokenSerializer, UserRegisterSerializer, UserLoginSerializer, VerifyEmailTokenSerializer
+from user.serializers import RefreshAccessTokenSerializer, ResetPasswordSerializer, SendEmailVerificationAgainSerializer, UserRegisterSerializer, UserLoginSerializer, VerifyEmailTokenSerializer
 from user.utils import get_access_token_for_user, get_tokens_for_user
 from user.email import send_email
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
 # Create your views here.
 
@@ -72,3 +73,34 @@ class RefreshAccessToken(APIView):
                 return Response({"access_token":token,"code":status.HTTP_200_OK,"status":True ,"message":'New access token has been generated.'})
             except Exception as e:
                 return Response({"errors":e,"code":status.HTTP_400_BAD_REQUEST,"status":False})
+            
+class SendEmailVerificationAgain(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = SendEmailVerificationAgainSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            email = serializer.validated_data['email']
+            user =  User.objects.get(email=email)
+            if not user:
+                return Response({"code":status.HTTP_400_BAD_REQUEST,"status":False,"message":"User not found."})
+            if user.is_verified:
+                return Response({"code":status.HTTP_400_BAD_REQUEST,"status":False,"message":"Your account is already verified."})
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.id))
+            send_email(user, uid, token)
+            return Response({"code":status.HTTP_200_OK,"status":True,"message":"Email has been sent to your email."})
+        except Exception as e:
+            return Response({"errors":str(e),"code":status.HTTP_400_BAD_REQUEST,"status":False,"message":"Some things went worng please try after some times."})
+        
+class ResetPassword(APIView):
+    permission_classes =[IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+        serializer = ResetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        if user and user.check_password(serializer.validated_data["old_password"]) :
+            user.set_password(serializer.validated_data['new_password'])
+            user.save()
+            return Response({"code":status.HTTP_200_OK,"status":True,"message":"Password reset successfully."})
+        return Response({"code":status.HTTP_400_BAD_REQUEST,"status":False,"message":"Your old password is incorrect. Please try again"})
+    
