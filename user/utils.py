@@ -7,3 +7,7 @@ def get_tokens_for_user(user):
         'refresh': str(refresh),
         'access': str(refresh.access_token),
     }
+
+def get_access_token_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return str(refresh.access_token)

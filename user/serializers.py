@@ -34,7 +34,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     def get_full_name(self,instance):
         first_name = instance.first_name
         last_name = instance.last_name
-        return first_name + last_name
+        return first_name + " " + last_name
 
     def validate(self, attrs):
         password = attrs.get('password')
@@ -54,8 +54,8 @@ class UserLoginSerializer(serializers.Serializer):
 
 
 class VerifyEmailTokenSerializer(serializers.Serializer):
+    uid = serializers.CharField()
     email_verification_token = serializers.CharField(max_length=2000)
-    email = serializers.EmailField()
 
     def validate(self, attrs):
         return attrs
